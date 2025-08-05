@@ -59,7 +59,7 @@ This project implements a hybrid approach combining:
 
 #### 1. WF5 Watermarking Algorithm
 - **DCT-based embedding**: Uses Discrete Cosine Transform for frequency domain embedding
-- **Error correction**: Hamming(7,4) code for robust data transmission
+- **Error correction**: Hamming(9,4) code for robust data transmission
 - **Matrix encoding**: Efficient bit embedding with minimal distortion
 
 #### 2. Chaotic Encryption Layer
@@ -73,12 +73,12 @@ This project implements a hybrid approach combining:
 #### Embedding Process:
 1. **Data Preparation**: Convert message to binary and apply chaotic encryption
 2. **DCT Transformation**: Convert image to frequency domain
-3. **WF5 Embedding**: Apply WF5 algorithm with Hamming codes
+3. **WF5 Embedding**: Apply WF5 algorithm with Hamming(9,4) codes
 4. **Inverse DCT**: Convert back to spatial domain
 
 #### Extraction Process:
 1. **DCT Analysis**: Extract frequency coefficients
-2. **WF5 Decoding**: Apply WF5 extraction with error correction
+2. **WF5 Decoding**: Apply WF5 extraction with Hamming(9,4) error correction
 3. **Chaotic Decryption**: Use chaotic key to decrypt data
 4. **Message Recovery**: Convert binary back to original message
 
@@ -125,7 +125,7 @@ python f5.py
 
 ### Core Parameters:
 - **Chaotic Parameters**: x0 (initial value), r (growth rate)
-- **WF5 Settings**: Hamming code configuration, embedding strength
+- **WF5 Settings**: Hamming(9,4) code configuration, embedding strength
 - **DCT Parameters**: Block size, coefficient selection
 
 ### Supported Formats:
@@ -137,7 +137,7 @@ python f5.py
 
 ### WF5 Algorithm Components:
 - **Matrix Encoding**: Efficient bit embedding
-- **Hamming Codes**: Error detection and correction
+- **Hamming(9,4) Codes**: Error detection and correction
 - **DCT Coefficients**: Frequency domain manipulation
 
 ### Chaotic Encryption Features:
