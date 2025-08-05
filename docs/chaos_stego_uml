@@ -1,0 +1,22 @@
+digraph "UML Activity Diagram" {
+	start [label="" fillcolor=black shape=circle style=filled]
+	input [label="Ввод данных"]
+	encrypt [label="Хаотическое шифрование"]
+	steg [label="Стеганографическое внедрение"]
+	save [label="Сохранение контейнера"]
+	extract [label="Извлечение контейнера"]
+	decrypt [label="Расшифровка данных"]
+	output [label="Вывод данных"]
+	decision [label="Декодировать?" shape=diamond]
+	end [label="" fillcolor=black shape=doublecircle style=filled]
+	start -> input
+	input -> encrypt
+	encrypt -> steg
+	steg -> save
+	save -> decision
+	decision -> extract [label="Да"]
+	extract -> decrypt
+	decrypt -> output
+	output -> end
+	decision -> end [label="Нет"]
+}

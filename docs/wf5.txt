@@ -1,0 +1,50 @@
+1. Tính trọng số cho ảnh dựa trên Gradient
+Mục tiêu:
+Xác định các vùng trong ảnh có mức độ quan trọng khác nhau, sử dụng gradient Sobel.
+Các bước:
+-Tính Gradient Sobel:
+-Sử dụng bộ lọc Sobel để tính gradient theo hướng x và y cho ảnh đầu vào.
+-Gradient tổng hợp: Gradient Magnitude
+-Chuẩn hóa Gradient:
+    Chuẩn hóa độ lớn gradient về khoảng [0,1] để đồng nhất dữ liệu.
+-Chuyển đổi thành trọng số:
+    Gán trọng số từ 1 (vùng ít quan trọng) đến W (vùng quan trọng nhất), dựa trên giá trị gradient đã chuẩn hóa.
+2. Chia ảnh thành các vùng dựa trên trọng số
+- Mục tiêu: Chia ảnh thành các vùng nhỏ (block) để áp dụng mã sửa lỗi và nhúng dữ liệu.
+- Các bước:
+- Phân chia ảnh: 
+    Chia ảnh thành các khối (block) kích thước 8×8 hoặc các vùng phù hợp với mã sửa lỗi (ví dụ: mã Hamming).
+- Sắp xếp vùng theo trọng số:
+    Xác định trọng số trung bình của mỗi block dựa trên bản đồ trọng số.
+- Sắp xếp các block theo thứ tự giảm dần của trọng số, ưu tiên các vùng ít nhạy cảm.
+3. Mã hóa dữ liệu bằng mã sửa lỗi
+- Mục tiêu: Sử dụng mã sửa lỗi để đảm bảo dữ liệu giấu tin được bảo vệ trước các lỗi nhỏ trong quá trình nhúng.
+- Các bước:
+- Chọn mã sửa lỗi:
+    Dùng mã Hamming (7,4), trong đó mỗi 4 bit dữ liệu được mã hóa thành 7 bit.
+- Mã hóa dữ liệu:
+    Duyệt qua dữ liệu nhị phân và áp dụng mã Hamming để chuyển đổi thành dạng mã hóa.
+4. Nhúng dữ liệu vào ảnh
+- Mục tiêu: Giấu dữ liệu vào các hệ số DCT của ảnh.
+- Các bước:
+- Biến đổi DCT:
+    Chia ảnh thành các block 8×8 và áp dụng biến đổi DCT (Discrete Cosine Transform) cho từng block.
+- Chọn hệ số DCT:
+    Chọn các hệ số DCT có giá trị nhỏ (ngoại trừ hệ số DC) để nhúng dữ liệu.
+- Nhúng dữ liệu:
+    Với mỗi bit dữ liệu:
+        Tìm vị trí trong block DCT phù hợp dựa trên trọng số.
+        Điều chỉnh hệ số DCT để nhúng bit (sử dụng phương pháp thay đổi độ lẻ/chẵn).
+- Biến đổi IDCT:
+    Áp dụng biến đổi IDCT (Inverse DCT) để tái tạo lại ảnh giấu tin.
+5. Tách dữ liệu từ ảnh
+- Mục tiêu: Trích xuất dữ liệu đã giấu trong ảnh từ các hệ số DCT.
+- Các bước:
+- Biến đổi DCT:
+    Áp dụng biến đổi DCT trên các block 8×8 của ảnh giấu tin.
+- Xác định vị trí nhúng:
+    Sử dụng thông tin bản đồ trọng số để xác định vị trí hệ số DCT đã dùng để nhúng dữ liệu.
+- Tách bit:
+    Trích xuất bit từ các hệ số DCT bằng cách kiểm tra độ lẻ/chẵn.
+- Giải mã dữ liệu:
+    Áp dụng giải mã Hamming để khôi phục dữ liệu ban đầu.
