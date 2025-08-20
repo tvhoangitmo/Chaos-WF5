@@ -1,211 +1,204 @@
-# WF5 + Chaotic Encryption Steganography
+# Steganography Algorithms Implementation with Chaotic Encryption
 
-A novel steganography implementation combining WF5 watermarking algorithm with chaotic encryption for enhanced security and data hiding capabilities.
+This project implements three popular steganography algorithms with chaotic encryption for hiding secret messages in digital images:
 
-## Project Structure
+1. **LSB (Least Significant Bit)** - Spatial domain steganography with chaotic encryption
+2. **DCT (Discrete Cosine Transform)** - Frequency domain steganography with chaotic encryption
+3. **F5** - Advanced JPEG steganography with matrix encoding and chaotic encryption
+4. **WF5** - Weighted F5 steganography with chaotic encryption (existing)
 
-```
-WF5 Method Steganography/
-├── src/                    # Main source code
-│   ├── wf5.py            # WF5 + Chaotic encryption core
-│   ├── attack.py          # Attack analysis (secondary)
-│   ├── dct.py             # DCT implementation (empty)
-│   ├── lsb.py             # LSB implementation (empty)
-│   └── f5.py              # F5 implementation (empty)
-├── images/                # Input and output images
-│   ├── input/             # Original images
-│   └── output/            # Result images
-├── docs/                  # Documentation
-│   ├── chaos_stego_uml   # UML diagram
-│   ├── Flowchar.drawio    # Flowchart diagram
-│   ├── wf5.txt           # WF5 documentation
-│   └── *.pdf             # Research papers
-├── requirements.txt       # Dependencies
-└── README.md             # This guide
-```
+## Features
+
+- **LSB Steganography**: Embeds secret data in the least significant bits of image pixels with chaotic encryption
+- **DCT Steganography**: Embeds data in DCT coefficients of 8x8 image blocks with chaotic encryption
+- **F5 Steganography**: Uses matrix encoding and permutative straddling with chaotic encryption
+- **WF5 Steganography**: Advanced weighted F5 with chaotic encryption and Hamming codes
+- **Chaotic Encryption**: Logistic map-based encryption for enhanced security
+- **Performance Metrics**: PSNR, SSIM, Detection Rate, Embedding Rate
+- **Comprehensive Testing**: Automated comparison of all algorithms
 
 ## Installation
 
-1. **Clone repository:**
+1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd Code
 ```
 
-2. **Create virtual environment:**
-```bash
-python -m venv .venv
-```
-
-3. **Activate virtual environment:**
-```bash
-# Windows
-.venv\Scripts\activate
-
-# Linux/Mac
-source .venv/bin/activate
-```
-
-4. **Install dependencies:**
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-
-## Core Implementation
-
-### WF5 + Chaotic Encryption Method
-
-This project implements a hybrid approach combining:
-
-#### 1. WF5 Watermarking Algorithm
-- **DCT-based embedding**: Uses Discrete Cosine Transform for frequency domain embedding
-- **Error correction**: Hamming(9,4) code for robust data transmission
-- **Matrix encoding**: Efficient bit embedding with minimal distortion
-
-#### 2. Chaotic Encryption Layer
-- **Logistic Map**: x(n+1) = r × x(n) × (1 - x(n))
-- **Parameter Space**: x0 ∈ [0.1, 0.9], r ∈ [3.57, 4.0]
-- **Key Generation**: Chaotic sequences for data scrambling
-- **Security Enhancement**: Large key space with high sensitivity
-
-### Implementation Details
-
-#### Embedding Process:
-1. **Data Preparation**: Convert message to binary and apply chaotic encryption
-2. **DCT Transformation**: Convert image to frequency domain
-3. **WF5 Embedding**: Apply WF5 algorithm with Hamming(9,4) codes
-4. **Inverse DCT**: Convert back to spatial domain
-
-#### Extraction Process:
-1. **DCT Analysis**: Extract frequency coefficients
-2. **WF5 Decoding**: Apply WF5 extraction with Hamming(9,4) error correction
-3. **Chaotic Decryption**: Use chaotic key to decrypt data
-4. **Message Recovery**: Convert binary back to original message
-
-## Main Features
-
-### Primary Features (Core Implementation):
-- **WF5 Algorithm**: Advanced watermarking with error correction
-- **Chaotic Encryption**: Logistic map-based data scrambling
-- **Hybrid Security**: Combined approach for enhanced protection
-- **DCT Processing**: Frequency domain information hiding
-
-### Secondary Features (Analysis Tools):
-- **Attack Analysis**: Statistical detection methods
-- **Brute-force Testing**: Chaotic key recovery attempts
-- **Performance Evaluation**: Quality and security metrics
 
 ## Usage
 
-### Main Implementation (WF5 + Chaotic):
-```bash
-cd src
-python wf5.py
+### Individual Algorithm Testing
+
+#### LSB Steganography with Chaotic Encryption
+```python
+from src.lsb import embed_lsb, extract_lsb
+
+# Embed secret message with chaotic encryption
+stego_path = embed_lsb("cover_image.jpg", "Secret message here", x0=0.6, r=3.9)
+
+# Extract secret message with chaotic decryption
+extracted_message = extract_lsb(stego_path, x0=0.6, r=3.9)
 ```
 
-### Attack Analysis (Secondary):
-```bash
-cd src
-python attack.py
+#### DCT Steganography with Chaotic Encryption
+```python
+from src.dct import embed_dct, extract_dct
+
+# Embed secret message with chaotic encryption
+stego_path = embed_dct("cover_image.jpg", "Secret message here", alpha=0.1, x0=0.6, r=3.9)
+
+# Extract secret message with chaotic decryption (need to know message length in bits)
+binary_message = text_to_bits("Secret message here")
+extracted_message = extract_dct(stego_path, len(binary_message), x0=0.6, r=3.9)
 ```
 
-### Future Implementations:
-```bash
-# DCT-based steganography (planned)
-python dct.py
+#### F5 Steganography with Chaotic Encryption
+```python
+from src.f5 import embed_f5, extract_f5
 
-# LSB steganography (planned)
-python lsb.py
+# Embed secret message with chaotic encryption
+stego_path = embed_f5("cover_image.jpg", "Secret message here", k=3, x0=0.6, r=3.9)
 
-# F5 steganography (planned)
-python f5.py
+# Extract secret message with chaotic decryption (need to know message length in bits)
+binary_message = text_to_bits("Secret message here")
+extracted_message = extract_f5(stego_path, len(binary_message), k=3, x0=0.6, r=3.9)
 ```
 
-## Configuration
+### Comprehensive Testing
 
-### Core Parameters:
-- **Chaotic Parameters**: x0 (initial value), r (growth rate)
-- **WF5 Settings**: Hamming(9,4) code configuration, embedding strength
-- **DCT Parameters**: Block size, coefficient selection
+Run the complete test suite to compare all algorithms:
 
-### Supported Formats:
-- **Input**: PNG, JPG, JPEG images
-- **Output**: Steganographic images with hidden data
-- **Data**: Text messages, binary files
-
-## Technical Architecture
-
-### WF5 Algorithm Components:
-- **Matrix Encoding**: Efficient bit embedding
-- **Hamming(9,4) Codes**: Error detection and correction
-- **DCT Coefficients**: Frequency domain manipulation
-
-### Chaotic Encryption Features:
-- **Logistic Map**: Nonlinear chaotic system
-- **Parameter Sensitivity**: High dependence on initial conditions
-- **Key Space**: Large parameter space for security
-- **Randomness**: True chaotic behavior for encryption
-
-### Integration Strategy:
-- **Pre-processing**: Chaotic encryption before embedding
-- **Embedding**: WF5 algorithm with DCT
-- **Post-processing**: Quality preservation and validation
-
-## Implementation Results
-
-### Core Performance:
-- **Embedding Success**: Reliable data hiding with WF5
-- **Security Enhancement**: Chaotic encryption adds protection layer
-- **Quality Preservation**: Minimal visual distortion
-- **Error Correction**: Hamming codes ensure data integrity
-
-### Secondary Analysis:
-- **Attack Resistance**: Statistical analysis capabilities
-- **Key Recovery**: Brute-force testing framework
-- **Performance Metrics**: Quality and security evaluation
-
-## Troubleshooting
-
-### Common Issues:
-
-1. **ModuleNotFoundError:**
 ```bash
-pip install -r requirements.txt
+python test_steganography.py
 ```
 
-2. **File not found:**
-- Check image paths in `images/`
-- Ensure files exist and have read permissions
+This will:
+- Test all three algorithms on multiple cover images
+- Generate stego images in respective output directories
+- Calculate and compare performance metrics
+- Provide a summary comparison table
 
-3. **Chaotic parameters:**
-- Verify parameter ranges (x0: 0.1-0.9, r: 3.57-4.0)
-- Check for chaotic behavior validation
+## Algorithm Details
 
-## References
+### LSB (Least Significant Bit) with Chaotic Encryption
+- **Domain**: Spatial domain
+- **Method**: Replaces least significant bits of pixel values with chaotic encryption
+- **Capacity**: High (1 bit per pixel)
+- **Robustness**: Low (sensitive to image modifications)
+- **Visibility**: Very low (minimal visual distortion)
+- **Security**: Enhanced with logistic map chaotic encryption
 
-- [OpenCV Documentation](https://docs.opencv.org/)
-- [NumPy Documentation](https://numpy.org/doc/)
-- [Steganography Techniques](https://en.wikipedia.org/wiki/Steganography)
-- [Chaotic Encryption](https://en.wikipedia.org/wiki/Chaos_theory)
-- [DCT Transform](https://en.wikipedia.org/wiki/Discrete_cosine_transform)
-- [WF5 Algorithm](https://en.wikipedia.org/wiki/F5_steganography)
+### DCT (Discrete Cosine Transform) with Chaotic Encryption
+- **Domain**: Frequency domain
+- **Method**: Modifies DCT coefficients in 8x8 blocks with chaotic encryption
+- **Capacity**: Medium (1 bit per 8x8 block)
+- **Robustness**: Medium (resistant to some image processing)
+- **Visibility**: Low (good visual quality)
+- **Security**: Enhanced with logistic map chaotic encryption
 
-## Authors
+### F5 with Chaotic Encryption
+- **Domain**: Frequency domain (JPEG coefficients)
+- **Method**: Matrix encoding with permutative straddling and chaotic encryption
+- **Capacity**: Medium (k bits in 2^k-1 coefficients)
+- **Robustness**: High (resistant to JPEG compression)
+- **Visibility**: Low (optimized for minimal distortion)
+- **Security**: Enhanced with logistic map chaotic encryption
 
-Project developed for Cryptography course at ITMO University.
+### WF5 with Chaotic Encryption (Existing)
+- **Domain**: Frequency domain with weighted embedding
+- **Method**: Advanced F5 with Hamming codes and chaotic encryption
+- **Capacity**: Medium (4 bits per 9 coefficients)
+- **Robustness**: Very high (error correction + chaotic encryption)
+- **Visibility**: Low (weighted embedding for minimal distortion)
+- **Security**: Enhanced with logistic map chaotic encryption
 
-## License
+## Performance Metrics
 
-MIT License - See LICENSE file for details.
+The implementation calculates and compares:
+
+- **PSNR (Peak Signal-to-Noise Ratio)**: Measures image quality
+- **SSIM (Structural Similarity Index)**: Measures perceptual similarity
+- **Detection Rate (DR)**: Bit accuracy of extracted message
+- **Embedding Rate (ER)**: Ratio of embedded bits to maximum capacity
+- **Processing Time**: Embedding and extraction speed
+- **Security Level**: Enhanced by chaotic encryption parameters
+
+## File Structure
+
+```
+Code/
+├── src/
+│   ├── lsb.py          # LSB steganography implementation
+│   ├── dct.py          # DCT steganography implementation
+│   ├── f5.py           # F5 steganography implementation
+│   ├── wf5.py          # WF5 steganography (existing)
+│   └── attack.py       # Steganalysis attack (existing)
+├── images/
+│   ├── input/          # Cover images
+│   └── output/         # Generated stego images
+│       ├── lsb_method/
+│       ├── dct_method/
+│       └── f5_method/
+├── test_steganography.py  # Comprehensive test script
+├── requirements.txt    # Python dependencies
+└── README.md          # This file
+```
+
+## Output
+
+The test script generates:
+- Stego images for each algorithm and test case
+- Performance comparison tables
+- Summary statistics
+- Best algorithm recommendations for different metrics
+
+## Dependencies
+
+- numpy >= 1.21.0
+- opencv-python >= 4.5.0
+- scikit-image >= 0.18.0
+- scipy >= 1.7.0
+- tqdm >= 4.62.0
+- nltk >= 3.6.0
+- bitarray >= 2.3.0
+- matplotlib >= 3.5.0
+- Pillow >= 8.3.0
+
+## Example Output
+
+```
+STEGANOGRAPHY ALGORITHMS COMPARISON WITH CHAOTIC ENCRYPTION
+============================================================
+
+Testing LSB Algorithm with Chaotic Encryption
+============================================================
+Cover image: ../images/input/cover_1.jpg
+Secret message: Hello, this is a test message for steganography with chaotic encryption!
+Message length: 65 characters
+Binary length: 520 bits
+Chaotic parameters: x0=0.6, r=3.9
+Stego image saved: ../images/output/lsb_method/stego_lsb_1.png
+Embedding time: 0.0156 seconds
+Extracted message: Hello, this is a test message for steganography with chaotic encryption!
+Recovery success: True
+Extraction time: 0.0102 seconds
+
+Performance Metrics:
+  PSNR: 51.23 dB
+  SSIM: 0.9998
+  Detection Rate (DR): 1.0000
+  Embedding Rate (ER): 0.0017 (520 / 307200 bits)
+```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+Feel free to contribute improvements, bug fixes, or additional steganography algorithms.
 
-## Support
+## License
 
-For questions and support, please contact the development team or create an issue in the repository. 
+This project is for educational and research purposes. 

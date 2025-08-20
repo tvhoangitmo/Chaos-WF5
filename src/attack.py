@@ -11,16 +11,27 @@ from bitarray import bitarray
 nltk.download('words')
 english_words = set(words.words())
 
-# Hamming(7,4) parity-check matrix (transposed)
+# Hamming(9,4) parity-check matrix (transposed) - 5x9 matrix
 H = np.array([
-    [1, 0, 0, 1, 1, 0, 1],
-    [0, 1, 0, 1, 0, 1, 1],
-    [0, 0, 1, 0, 1, 1, 1]
-])
+    [1, 1, 1, 0, 1, 0, 0, 0, 0],
+    [1, 1, 0, 1, 0, 1, 0, 0, 0],
+    [1, 0, 1, 1, 0, 0, 1, 0, 0],
+    [0, 1, 1, 1, 0, 0, 0, 1, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1]
+], dtype=np.uint8)
 
 # Bước 1: Trích hệ số DCT
 def jpeg_dct_coefficients(img_path):
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    
+    # Pad image to be divisible by 8
+    h, w = img.shape
+    pad_h = (8 - h % 8) % 8
+    pad_w = (8 - w % 8) % 8
+    
+    if pad_h > 0 or pad_w > 0:
+        img = cv2.copyMakeBorder(img, 0, pad_h, 0, pad_w, cv2.BORDER_REPLICATE)
+    
     img = img.astype(np.float32) - 128
     blocks = view_as_blocks(img, block_shape=(8, 8))
     h, w, _, _ = blocks.shape
@@ -43,19 +54,19 @@ def analyze_parity_and_chi2(coeffs):
     print(f"[+] Chi-square: {stat:.2f}, p-value: {p:.4e}")
     return coeffs
 
-# Bước 2: Giả định dùng WF5 → trích dữ liệu
+# Bước 2: Giả định dùng WF5 với Hamming(9,4) → trích dữ liệu
 def wf5_extract(cipher_coeffs):
     bits = []
     i = 0
-    while i + 7 <= len(cipher_coeffs):
-        block = cipher_coeffs[i:i+7]
-        if np.count_nonzero(block) < 7:
+    while i + 9 <= len(cipher_coeffs):
+        block = cipher_coeffs[i:i+9]
+        if np.count_nonzero(block) < 9:
             i += 1
             continue
         r = np.array([b % 2 for b in block])
         s = (H @ r) % 2
         bits.extend(s.tolist())
-        i += 7
+        i += 9
     return np.array(bits[:21600], dtype=np.uint8)
 
 # Bước 3: Sinh chuỗi chaotic
@@ -102,7 +113,7 @@ def chaotic_brute_force(encrypted_bits, max_trials=100000):
 # ======= CHẠY TOÀN BỘ QUÁ TRÌNH =======
 
 # Đọc ảnh và phân tích
-coeffs = jpeg_dct_coefficients("../images/output/stego_wf5.png")
+coeffs = jpeg_dct_coefficients("../images/output/wf5_method/stego_wf5_4.png")
 cipher_coeffs = analyze_parity_and_chi2(coeffs)
 
 # Trích encrypted bits từ ảnh
