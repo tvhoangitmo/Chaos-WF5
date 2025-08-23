@@ -255,6 +255,33 @@ def bits_to_text(bits):
     except Exception as e:
         return f"[Decode Error] {str(e)}"
 
+# --------- WRAPPER FUNCTIONS FOR TEST SCRIPT ---------
+def embed_wf5(image_path, secret_message, output_path="../images/output/wf5_method/stego_wf5.png", x0=0.6, r=3.9, threshold=30):
+    """
+    Wrapper function for WF5 embedding that matches the test script interface
+    """
+    # Convert text to bits
+    binary = text_to_bits(secret_message)
+    
+    # Chaotic encryption
+    encrypted = chaotic_encrypt(binary, x0, r)
+    
+    # Embed using the full WF5 algorithm
+    return embed_wf5_full(image_path, encrypted, output_path, threshold)
+
+def extract_wf5(stego_image_path, num_bits, x0=0.6, r=3.9):
+    """
+    Wrapper function for WF5 extraction that matches the test script interface
+    """
+    # Extract encrypted bits
+    extracted = extract_wf5_full(stego_image_path, num_bits)
+    
+    # Chaotic decryption
+    decrypted = chaotic_decrypt(extracted, x0, r)
+    
+    # Convert bits back to text
+    return bits_to_text(decrypted)
+
 def main():
     cover_image = "../images/input/cover_1.jpg"
     #secret_message = "In the modern world, the pace of life seems to accelerate with every passing year. Cities grow louder, schedules become tighter, and the space for silence slowly disappears from our daily routines. We wake up to the sound of alarms, check our phones before even rising from bed, and are pulled into a current of obligations, deadlines, messages, and expectations before we have a chance to ask ourselves how we truly feel. Day after day, we go through the motions, answering emails, attending meetings, scrolling through social media, yet often finish the day with a vague sense of emptiness, as if something essential is missing but we cannot quite name it. It is not that our lives are meaningless or that we are doing something wrong. Rather, it is that we have grown used to neglecting the quiet voice within us that longs for connection, rest, and reflection. The world teaches us to chase success, to collect accomplishments, and to measure worth by what can be seen, counted, and compared. But the heart measures differently. It asks, Are you at peace? Do you feel joy in what you do? Are you moving toward a life that feels honest and whole? These questions are easy to ignore, especially when we are surrounded by noise, both literal and metaphorical. But ignoring them does not make them disappear. Over time, the consequences surface in unexpected ways: a deep fatigue that sleep cannot fix, a sense of disconnection even in the company of others, a quiet grief for the life we imagined but never created. To reclaim ourselves, we do not need to abandon our responsibilities or retreat into isolation. What we need is to create room for stillness, even in the midst of our busy lives. We need to pause, not just when we are exhausted, but regularly, as a form of care, not collapse. Stillness is not idleness. It is a form of listening. It is the practice of tuning in to what truly matters, of letting go of what is urgent but unimportant, and of remembering that we are human beings, not just human doings. You can begin today. You do not need perfect conditions. You only need to notice. Watch the sky. Feel the texture of the air. Step outside and breathe. Write a few lines about how you really feel. Speak gently to yourself, especially in moments of frustration. These are small things, but they are not insignificant. They are the roots of a deeper life, one that is not just full but fulfilling. No one else can live your life for you. You have the responsibility and the privilege of shaping it from the inside out. And that begins not with doing more, but with noticing more. Listening more. Trusting more. Not the voices of the world, but the quiet truth inside your own heart."
