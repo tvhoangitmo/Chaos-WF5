@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# F5 salt sidecar (if written next to repo root)
+*.salt
