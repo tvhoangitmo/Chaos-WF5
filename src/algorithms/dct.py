@@ -2,6 +2,29 @@ import argparse, os, hashlib
 import numpy as np, cv2
 from skimage.metrics import structural_similarity as ssim
 
+
+def _imread_bgr_unicode(path: str):
+    """cv2.imread often fails on Windows when path contains non-ASCII (e.g. Cyrillic)."""
+    with open(path, "rb") as f:
+        raw = f.read()
+    if not raw:
+        return None
+    arr = np.frombuffer(raw, dtype=np.uint8)
+    return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+
+def _imwrite_bgr_unicode(path: str, img: np.ndarray) -> bool:
+    ext = os.path.splitext(path)[1].lower() or ".png"
+    if ext not in (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"):
+        ext = ".png"
+    ok, buf = cv2.imencode(ext, img)
+    if not ok:
+        return False
+    with open(path, "wb") as f:
+        f.write(buf.tobytes())
+    return True
+
+
 # ----------------------------- Bit helpers ---------------------------------
 def bytes_to_bits(b: bytes) -> np.ndarray:
     arr = np.frombuffer(b, dtype=np.uint8)
@@ -165,17 +188,16 @@ def _extract_dct_array(img: np.ndarray, block_size: int = 8, pos=(4, 3)) -> np.n
 
 def embed_dct_full(img_path: str, bits: np.ndarray, out_path: str,
                    block_size: int = 8, pos=(4, 3), tau: float = 5.0) -> int:
-    img = cv2.imread(img_path)
+    img = _imread_bgr_unicode(img_path)
     if img is None:
         raise FileNotFoundError(f"Input image not found: {img_path}")
     stego, used = _embed_dct_array(img, bits, block_size, pos, tau)
-    ok = cv2.imwrite(out_path, stego)
-    if not ok:
+    if not _imwrite_bgr_unicode(out_path, stego):
         raise RuntimeError(f"Failed to write stego image: {out_path}")
     return used
 
 def extract_dct_full(path: str, block_size: int = 8, pos=(4, 3)) -> np.ndarray:
-    img = cv2.imread(path)
+    img = _imread_bgr_unicode(path)
     if img is None:
         raise FileNotFoundError(f"Stego image not found: {path}")
     return _extract_dct_array(img, block_size, pos)
@@ -231,7 +253,7 @@ def main():
     pos = (args.pos_u, args.pos_v)
 
     if args.cmd == 'embed':
-        img = cv2.imread(args.inp)
+        img = _imread_bgr_unicode(args.inp)
         if img is None:
             raise FileNotFoundError(f"Input image not found: {args.inp}")
 
@@ -244,12 +266,12 @@ def main():
         if payload_bits_use.size == 0 and cap < 32:
             print(f"WARNING: capacity={cap} bits < 32 bits (header). Nothing embedded.")
             # still write a copy image (optional)
-            cv2.imwrite(args.out, img)
+            _imwrite_bgr_unicode(args.out, img)
             return
 
         nbits = embed_dct_full(args.inp, payload_bits_use, args.out, pos=pos, tau=args.tau)
 
-        stego = cv2.imread(args.out)
+        stego = _imread_bgr_unicode(args.out)
         psnr, ss = compute_metrics(img, stego)
 
         total_image_bits = int(img.size * 8)

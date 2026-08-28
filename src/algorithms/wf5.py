@@ -5,28 +5,31 @@ import numpy as np
 import cv2
 from skimage.metrics import structural_similarity as ssim
 
-# --------------------------- Image I/O (robust) ----------------------------
+# Image I/O (robust) 
 def read_image_bgr(path: str) -> np.ndarray:
-    """
-    Try Pillow first (often avoids PNG gamma/profile surprises), fallback to OpenCV.
-    Always returns uint8 BGR (H,W,3).
-    """
+
+    # Try Pillow first (often avoids PNG gamma/profile surprises), fallback to OpenCV.
+    # Always returns uint8 BGR (H,W,3).
     try:
-        from PIL import Image  # type: ignore
+        from PIL import Image 
         im = Image.open(path).convert("RGB")
         rgb = np.array(im, dtype=np.uint8)
         bgr = rgb[:, :, ::-1].copy()
         return bgr
     except Exception:
-        img = cv2.imread(path, cv2.IMREAD_COLOR)
+        # cv2.imread breaks on non-ASCII paths on Windows; imdecode + binary read is safe.
+        with open(path, "rb") as f:
+            raw = f.read()
+        if not raw:
+            raise FileNotFoundError(f"Image not found or unreadable: {path}")
+        arr = np.frombuffer(raw, dtype=np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         if img is None:
             raise FileNotFoundError(f"Image not found or unreadable: {path}")
         return img
 
 def write_image_bgr(path: str, bgr: np.ndarray) -> None:
-    """
-    Try Pillow first; fallback OpenCV.
-    """
+    # Try Pillow first; fallback imencode + binary write (Unicode-safe on Windows).
     bgr = np.ascontiguousarray(bgr)
     try:
         from PIL import Image  # type: ignore
@@ -34,11 +37,16 @@ def write_image_bgr(path: str, bgr: np.ndarray) -> None:
         im = Image.fromarray(rgb, mode="RGB")
         im.save(path)
     except Exception:
-        ok = cv2.imwrite(path, bgr)
+        ext = os.path.splitext(path)[1].lower() or ".png"
+        if ext not in (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"):
+            ext = ".png"
+        ok, buf = cv2.imencode(ext, bgr)
         if not ok:
             raise RuntimeError(f"Failed to write image: {path}")
+        with open(path, "wb") as f:
+            f.write(buf.tobytes())
 
-# ----------------------------- Bit helpers ---------------------------------
+# Bit helpers
 def bytes_to_bits(b: bytes) -> np.ndarray:
     arr = np.frombuffer(b, dtype=np.uint8)
     bits = ((arr[:, None] >> np.arange(7, -1, -1)) & 1).astype(np.uint8)
@@ -61,7 +69,7 @@ def bits_to_u32(bits: np.ndarray) -> int:
         val = (val << 1) | int(b)
     return val
 
-# -------------------------- Chaotic encryption -----------------------------
+# Chaotic encryption
 def logistic_keystream(n: int, mu: float, x0: float, warmup: int = 1000) -> np.ndarray:
     if not (0.0 < x0 < 1.0):
         raise ValueError("x0 must be in (0,1)")
@@ -85,7 +93,7 @@ def chaotic_xor(data: bytes, mu: float, x0: float, warmup: int = 1000) -> bytes:
     arr = np.frombuffer(data, dtype=np.uint8)
     return (arr ^ ks).tobytes()
 
-# ----------------------------- WF5 matrices --------------------------------
+# WF5 matrices 
 Hw = np.array(
     [
         [1, 0, 0, 0, 1, 1, 1, 0, 1],
@@ -113,11 +121,9 @@ for idx in range(512):
 for s in range(16):
     CAND_BY_SYN[s] = np.array(CAND_BY_SYN[s], dtype=np.int32)
 
-# ------------------------ Sobel weight mask --------------------------------
+# Sobel weight mask
 def compute_weight_mask_bytes(img_bgr: np.ndarray, codeword_size: int = 9, threshold: float = 30.0) -> np.ndarray:
-    """
-    Theo otchot: w=1 nếu G<T, w=2 nếu G>=T
-    """
+    # w=1 if G<T, w=2 if G>=T
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
     gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
     gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
@@ -137,14 +143,12 @@ def pick_best_e(weights9: np.ndarray, syn_target_int: int) -> np.ndarray:
     costs = cand.astype(np.uint16) @ weights9.astype(np.uint16)
     return cand[np.argmin(costs)].astype(np.uint8)
 
-# ----------------------------- Payload -------------------------------------
+# Payload
 def build_payload_bits_from_ciphertext(ct: bytes) -> np.ndarray:
     return np.concatenate([u32_to_bits(len(ct)), bytes_to_bits(ct)])
 
 def extract_ciphertext_only(bits: np.ndarray) -> bytes:
-    """
-    Extract ciphertext bytes from bitstream (no decrypt).
-    """
+    # Extract ciphertext bytes from bitstream (no decrypt).
     if bits.size < 32:
         raise ValueError("Not enough bits for header")
     ct_len = bits_to_u32(bits[:32])
@@ -160,11 +164,11 @@ def parse_payload_bits(bits: np.ndarray, mu: float, x0: float, warmup: int = 100
     ct = extract_ciphertext_only(bits)
     return chaotic_xor(ct, mu, x0, warmup)
 
-# ----------------------------- Capacity ------------------------------------
+# Capacity
 def max_capacity_bits(img: np.ndarray) -> int:
     return (img.size // 9) * 4
 
-# ----------------------------- Embed/Extract -------------------------------
+# Embed/Extract
 def embed_wf5(cover_bgr: np.ndarray, payload_bits: np.ndarray, threshold: float = 30.0) -> tuple[np.ndarray, int]:
     flat = cover_bgr.ravel()
     n_groups = flat.size // 9
@@ -222,7 +226,7 @@ def extract_wf5_bits(stego_bgr: np.ndarray) -> np.ndarray:
 
     return bits_out
 
-# ----------------------------- Metrics -------------------------------------
+# Metrics
 def compute_metrics(img1: np.ndarray, img2: np.ndarray):
     psnr_val = cv2.PSNR(img1, img2)
     try:
@@ -238,7 +242,7 @@ def first_diff(a: bytes, b: bytes) -> int:
             return i
     return -1 if len(a) == len(b) else n
 
-# ----------------------------- CLI -----------------------------------------
+# CLI
 def main():
     ap = argparse.ArgumentParser(description="WF5 + Sobel weights + Chaotic XOR (Logistic)")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -306,7 +310,7 @@ def main():
         if too_large:
             print("WARNING: message > capacity -> embedded prefix only (header adjusted).")
 
-        # -------- SELF-CHECK (this is the key) --------
+        # SELF-CHECK (this is the key)
         bits_back = extract_wf5_bits(stego2)
         ct_back = extract_ciphertext_only(bits_back)
 
