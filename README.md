@@ -4,6 +4,8 @@ The **main contribution of this project is WF5** (`wf5.py`): weighted spatial em
 
 **LSB**, **DCT**, and **F5** are included **primarily as comparison baselines** under the same chaotic payload format, so you can benchmark capacity, image quality (PSNR/SSIM), and blind-detection scores (`stego_scores.py`) on equal footing.
 
+A **desktop GUI** (`stego_app.py`) wraps all four embedders and prints quality + steganalysis scores after hiding a message. Extract is still done via the CLI scripts.
+
 ## Repository layout
 
 ```
@@ -11,6 +13,7 @@ Code/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
+├── stego_app.py                  # GUI: embed + PSNR/SSIM/ER + RS/Chi²/SP
 ├── docs/                         # WF5 notes and diagrams (e.g. wf5.txt, drawio)
 └── src/
     ├── algorithms/
@@ -19,30 +22,47 @@ Code/
     │   ├── dct.py                # Baseline: DCT (8×8, Y channel) + chaos
     │   ├── f5.py                 # Baseline: F5-like DCT + JPEG-like quant + chaos + --passphrase
     │   └── stego_scores.py       # Blind steganalysis (RS, Chi-square, Sample Pair, LSB entropy)
-    ├── input/                    # Example text inputs (e.g. test.txt)
-    ├── cover_images/             # Sample covers (Barbara, Fruit, Lenna)
+    ├── input/                    # Example secrets (test1.txt, test2.txt, test4.txt)
+    ├── cover_images/             # Sample covers (Barbara, ColorImage, Document, Fruit, Lenna, Logo, Mountain, VanGogh)
     ├── stego_image/              # All stego outputs (by method)
     │   ├── lsb/
     │   ├── dct/
     │   ├── wf5/
-    │   └── f5/                   # F5-like stego outputs (PNG/JPEG per your --out)
-    ├── secret.txt                # Typical secret file for CLI demos (adjust as needed)
+    │   └── f5/
+    ├── secret.txt                # Typical secret file for CLI demos
     └── …                         # Optional local artifacts (recovered.*, payload_bits.txt, …)
 ```
 
-Run all CLI examples from the **repository root** so paths resolve correctly.
+Run all CLI examples and the GUI from the **repository root** so paths resolve correctly.
 
 ## Requirements
 
 - Python 3.10+ (3.11 recommended)
+- Tkinter (standard library) for the GUI — on some Linux installs: `sudo apt install python3-tk`
 
 ```bash
 pip install -r requirements.txt
 ```
 
+## Graphical interface — `stego_app.py`
+
+Embed only: pick algorithm (WF5 / LSB / DCT / F5), cover image, secret file, output folder, and stego filename. Logistic parameters (`μ`, `x0`, `warmup`) are shared; extra fields apply per method (WF5 `threshold`, DCT `τ` / `pos_u` / `pos_v`, F5 passphrase / quality / `k`).
+
+```bash
+python stego_app.py
+```
+
+After embedding, the window reports:
+
+- **PSNR / SSIM** vs. the cover
+- **ER_img / ER_cap** (and F5 **ER_message** if applicable)
+- **RS, Chi-square, Sample Pair, LSB entropy**, weighted `avg_score`, and a CLEAN / LOW / MODERATE / HIGH verdict
+
+If the secret exceeds capacity, the payload is truncated and a warning is shown. To recover the message, use the matching **extract** CLI below with the same chaos (and F5) parameters.
+
 ## Command-line usage
 
-Chaos parameters: `--mu` (e.g. `3.99`), `--x0` in `(0, 1)`. Adjust `--in`, `--out`, and `--msgfile` as needed.
+Chaos parameters: `--mu` (e.g. `3.99`), `--x0` in `(0, 1)`, `--warmup` (default `1000`). Adjust `--in`, `--out`, and `--msgfile` as needed.
 
 ### WF5 (primary) — `src/algorithms/wf5.py`
 
@@ -78,17 +98,11 @@ python src/algorithms/dct.py extract --in src/stego_image/dct/Lenna_stego.png --
 
 F5-like embedding on the **Y** channel: OpenCV **DCT**, **JPEG-like quantization** (`--quality`, default 85), matrix encoding with **`k`** bits per **2^k − 1** nonzero AC coefficients (default **`k=3`**, 7 coefficients per group). Coefficient order is shuffled with a **`--passphrase`**-seeded permutation. **No `jpegio`**—covers and outputs can be **PNG or JPEG** (whatever OpenCV accepts).
 
-From the repo root (paths match your layout):
+From the repo root:
 
 ```bash
-python src/algorithms/f5.py embed --in src/cover_images/Fruit.png --out src/stego_image/f5/Fruit_f5_4.png --msgfile src/input/test.txt --passphrase mypass --mu 3.99 --x0 0.4132 --quality 85 --k 3
-python src/algorithms/f5.py extract --in src/stego_image/f5/Fruit_f5_4.png --out src/recovered.bin --passphrase mypass --mu 3.99 --x0 0.4132 --quality 85 --k 3 --verify src/input/test.txt
-```
-
-If you run from inside `src/stego_image/f5/` (with `Fruit.png` in that folder):
-
-```bash
-python ../../algorithms/f5.py embed --in Fruit.png --out Fruit_f5_4.png --msgfile ../../input/test.txt --passphrase mypass --mu 3.99 --x0 0.4132 --quality 85 --k 3
+python src/algorithms/f5.py embed --in src/cover_images/Fruit.png --out src/stego_image/f5/Fruit_f5_4.png --msgfile src/input/test1.txt --passphrase mypass --mu 3.99 --x0 0.4132 --quality 85 --k 3
+python src/algorithms/f5.py extract --in src/stego_image/f5/Fruit_f5_4.png --out src/recovered.bin --passphrase mypass --mu 3.99 --x0 0.4132 --quality 85 --k 3 --verify src/input/test1.txt
 ```
 
 Use the **same** `--passphrase`, `--quality`, `--k`, `--mu`, `--x0`, and `--warmup` for extract as for embed.
@@ -99,20 +113,20 @@ Use the **same** `--passphrase`, `--quality`, `--k`, `--mu`, `--x0`, and `--warm
 python src/algorithms/stego_scores.py src/stego_image/wf5/Lenna_wf5_1.png
 ```
 
-Use the same tool on **WF5** and **baseline** stego images to compare RS, Chi-square, Sample Pair, and LSB entropy–based signals. Outputs a weighted composite and a verdict (CLEAN / LOW / MODERATE / HIGH). RS follows Fridrich, Goljan, Du (2001).
+Use the same tool on **WF5** and **baseline** stego images to compare RS, Chi-square, Sample Pair, and LSB entropy–based signals. Outputs a weighted composite and a verdict (CLEAN / LOW / MODERATE / HIGH). RS follows Fridrich, Goljan, Du (2001). The GUI runs this automatically after each embed.
 
 ## Metrics printed by the embedders
 
 - **PSNR / SSIM**: visual quality vs. cover (useful when comparing WF5 to baselines).
 - **ER_img / ER_cap**: embedded bits vs. total image bits vs. method capacity.
-- **`--verify`**: optional SHA-256 check against the original secret file.
+- **`--verify`**: optional SHA-256 check against the original secret file (CLI extract only).
 
 ## Main dependencies (`requirements.txt`)
 
 Includes `numpy`, `opencv-python`, `scikit-image`, `scipy`, `tqdm`, `nltk`, `bitarray`, `matplotlib`, `Pillow`, `cryptography`.
 
-The current F5 baseline does not use `cryptography` or `jpegio` (permutation is SHA-256 + NumPy). Some other listed packages may be unused by the embedders and kept for notebooks or extensions.
+The current F5 baseline does not use `cryptography` or `jpegio` (permutation is SHA-256 + NumPy). Some other listed packages may be unused by the embedders and kept for notebooks or extensions. The GUI uses **Tkinter** (stdlib) plus the same algorithm modules.
 
 ## Purpose
 
-Educational and research use (WF5-focused steganography, with classical methods for comparison and blind steganalysis).
+Educational and research use (WF5-focused steganography, with classical methods for comparison, a small GUI for embed + metrics, and blind steganalysis).
